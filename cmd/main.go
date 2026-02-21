@@ -5,7 +5,8 @@ import (
 	"log"
 	"net/http"
 	"os"
-	handlers "theSone/internal/deleviry/http"
+	delivery "theSone/internal/delivery/http"
+	"theSone/internal/repository/postgres"
 
 	_ "github.com/lib/pq"
 )
@@ -23,20 +24,21 @@ func main() {
 		log.Println("ping db", err)
 	}
 
-	handlers.SetDB(db)
+	repo := postgres.NewTodoRepository(db)
+	handler := delivery.NewTodoHandler(repo)
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/todos", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
-			handlers.CreateTodo(w, r)
+			handler.CreateTodo(w, r)
 		case http.MethodGet:
-			handlers.GetTodoById(w, r)
+			handler.GetTodoById(w, r)
 		case http.MethodPut:
-			handlers.UpdateTodo(w, r)
+			handler.UpdateTodo(w, r)
 		case http.MethodDelete:
-			handlers.DeleteTodo(w, r)
+			handler.DeleteTodo(w, r)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
