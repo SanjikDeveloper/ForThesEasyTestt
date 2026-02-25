@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -12,16 +13,19 @@ import (
 )
 
 func main() {
-	dsn := os.Getenv("")
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "postgres://postgres:1234@localhost:5432/todo_db?sslmode=disable"
+	}
 
-	db, err := sql.Open("", dsn)
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		log.Fatal("failed to Db connet", err)
+		log.Fatal(err)
 	}
 	defer db.Close()
 
 	if err := db.Ping(); err != nil {
-		log.Println("ping db", err)
+		log.Fatal(err)
 	}
 
 	repo := postgres.NewTodoRepository(db)
@@ -40,12 +44,10 @@ func main() {
 		case http.MethodDelete:
 			handler.DeleteTodo(w, r)
 		default:
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			delivery.ErrorResponse(w, http.StatusMethodNotAllowed, "method not allowed")
 		}
 	})
 
-	log.Println("listening :8080")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
-		log.Fatal("failed to start server:", err)
-	}
+	fmt.Println("Server is running on :8080")
+	log.Fatal(http.ListenAndServe(":8080", mux))
 }
