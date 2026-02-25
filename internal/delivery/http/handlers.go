@@ -26,18 +26,36 @@ func NewTodoHandler(repo TodoRepository) *TodoHandler {
 func (h *TodoHandler) writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
+	err := json.NewEncoder(w).Encode(v)
+	if err != nil {
+		return
+	}
+}
+
+func (h *TodoHandler) validateTodo(t *models.Todo) string {
+	if t.TodoList != nil && len(*t.TodoList) > 100 {
+		return "Title should be more than 100"
+	}
+	if t.Description != nil && len(*t.Description) > 500 {
+		return "Description should be less than 500"
+	}
+	return ""
 }
 
 func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 	var t models.Todo
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if msg := h.validateTodo(&t); msg != "" {
+		ErrorResponse(w, http.StatusBadRequest, msg)
 		return
 	}
 
 	if err := h.repo.Create(r.Context(), &t); err != nil {
-		http.Error(w, "creating todo error", http.StatusInternalServerError)
+		ErrorResponse(w, http.StatusInternalServerError, "creating todo error")
 		return
 	}
 
@@ -48,13 +66,13 @@ func (h *TodoHandler) GetTodoById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid or missing ID", http.StatusBadRequest)
+		ErrorResponse(w, http.StatusBadRequest, "Invalid or missing ID")
 		return
 	}
 
 	t, err := h.repo.GetByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, "Todo not found", http.StatusNotFound)
+		ErrorResponse(w, http.StatusNotFound, "theres no todo like this")
 		return
 	}
 
@@ -65,19 +83,24 @@ func (h *TodoHandler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid or missing ID", http.StatusBadRequest)
+		ErrorResponse(w, http.StatusBadRequest, "Invalid or missing ID")
 		return
 	}
 
 	var t models.Todo
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 	t.IdList = id
 
+	if msg := h.validateTodo(&t); msg != "" {
+		ErrorResponse(w, http.StatusBadRequest, msg)
+		return
+	}
+
 	if err := h.repo.Update(r.Context(), &t); err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		ErrorResponse(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -88,12 +111,12 @@ func (h *TodoHandler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		http.Error(w, "Invalid or missing ID", http.StatusBadRequest)
+		ErrorResponse(w, http.StatusBadRequest, "Invalid or missing ID")
 		return
 	}
 
 	if err := h.repo.Delete(r.Context(), id); err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		ErrorResponse(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 

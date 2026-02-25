@@ -30,7 +30,13 @@ func (r *TodoRepository) GetByID(ctx context.Context, id int) (*models.Todo, err
 }
 
 func (r *TodoRepository) Update(ctx context.Context, t *models.Todo) error {
-	query := `UPDATE todos SET todo_list = $1, description = $2, created_at = $3 WHERE id_list = $4`
+	// Мы используем COALESCE($1, todo_list).
+	// Это значит: "Возьми новое значение, но если оно пустое ($1 is NULL), оставь старое".
+	query := `UPDATE todos 
+              SET todo_list = COALESCE($1, todo_list), 
+                  description = COALESCE($2, description), 
+                  created_at = COALESCE($3, created_at) 
+              WHERE id_list = $4`
 	res, err := r.db.ExecContext(ctx, query, t.TodoList, t.Description, t.CreatedAt, t.IdList)
 	if err != nil {
 		return err
