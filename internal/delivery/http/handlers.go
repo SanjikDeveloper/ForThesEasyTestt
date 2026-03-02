@@ -37,7 +37,7 @@ func (h *TodoHandler) validateTodo(t *models.Todo) string {
 		return "Title should be more than 100"
 	}
 	if t.Description != nil && len(*t.Description) > 500 {
-		return "Description should be less than 500"
+		return "Description should be less than <500"
 	}
 	return ""
 }
