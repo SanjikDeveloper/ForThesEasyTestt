@@ -15,6 +15,7 @@ func NewTodoRepository(db *sql.DB) *TodoRepository {
 }
 
 func (r *TodoRepository) Create(ctx context.Context, t *models.Todo) error {
+	// TODO: У тебя при вызове функции каждый раз создается новая строка с одинаковым SQL. Лучше вынеси это в константы
 	query := `INSERT INTO todos (todo_list, description, created_at) VALUES ($1, $2, $3) RETURNING id_list`
 	return r.db.QueryRowContext(ctx, query, t.TodoList, t.Description, t.CreatedAt).Scan(&t.IdList)
 }
@@ -32,6 +33,10 @@ func (r *TodoRepository) GetByID(ctx context.Context, id int) (*models.Todo, err
 func (r *TodoRepository) Update(ctx context.Context, t *models.Todo) error {
 	// Мы используем COALESCE($1, todo_list).
 	// Это значит: "Возьми новое значение, но если оно пустое ($1 is NULL), оставь старое".
+	// TODO: в такой конструкции легко запнуться и обновить данные на пустые значения. Ты перекладываешь ответственность на базу
+	// Лучшим и более явным решением будет использовать конструкцию, в которой ты сам проверяешь, если поле не пустое, то ты его обновляешь
+	// Напиши такое решение используя библиотеку squirrel
+	// Под апдейт ты можешь создать новую модельку уже с указателями и там проверять на наличие переменных
 	query := `UPDATE todos 
               SET todo_list = COALESCE($1, todo_list), 
                   description = COALESCE($2, description), 
@@ -41,6 +46,7 @@ func (r *TodoRepository) Update(ctx context.Context, t *models.Todo) error {
 	if err != nil {
 		return err
 	}
+	// TODO: почему не обрабатываешь ошибку?
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
 		return sql.ErrNoRows
