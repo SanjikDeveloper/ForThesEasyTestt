@@ -38,23 +38,7 @@ func main() {
 	repo := postgres.NewTodoRepository(db)
 	handler := delivery.NewTodoHandler(repo)
 
-	// TODO: вынеси роутер отдельно в папку http, так логически будет правильнее
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/todos", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			handler.CreateTodo(w, r)
-		case http.MethodGet:
-			handler.GetTodoById(w, r)
-		case http.MethodPut:
-			handler.UpdateTodo(w, r)
-		case http.MethodDelete:
-			handler.DeleteTodo(w, r)
-		default:
-			delivery.ErrorResponse(w, http.StatusMethodNotAllowed, "method not allowed")
-		}
-	})
+	mux := delivery.RegisterRoutes(handler)
 
 	fmt.Printf("Server is running on %s\n", cfg.ServerPort)
 	if err := http.ListenAndServe(cfg.ServerPort, mux); err != nil {
