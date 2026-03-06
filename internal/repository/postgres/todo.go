@@ -6,6 +6,17 @@ import (
 	"theSone/internal/models"
 )
 
+const (
+	createTodoQuery  = `INSERT INTO todos (todo_list, description, created_at) VALUES ($1, $2, $3) RETURNING id_list`
+	getTodoByIDQuery = `SELECT id_list, todo_list, description, created_at FROM todos WHERE id_list = $1`
+	updateTodoQuery  = `UPDATE todos 
+              SET todo_list = COALESCE($1, todo_list), 
+                  description = COALESCE($2, description), 
+                  created_at = COALESCE($3, created_at) 
+              WHERE id_list = $4`
+	deleteTodoQuery = `DELETE FROM todos WHERE id_list = $1`
+)
+
 type TodoRepository struct {
 	db *sql.DB
 }
@@ -16,14 +27,12 @@ func NewTodoRepository(db *sql.DB) *TodoRepository {
 
 func (r *TodoRepository) Create(ctx context.Context, t *models.Todo) error {
 	// TODO: У тебя при вызове функции каждый раз создается новая строка с одинаковым SQL. Лучше вынеси это в константы
-	query := `INSERT INTO todos (todo_list, description, created_at) VALUES ($1, $2, $3) RETURNING id_list`
-	return r.db.QueryRowContext(ctx, query, t.TodoList, t.Description, t.CreatedAt).Scan(&t.IdList)
+	return r.db.QueryRowContext(ctx, createTodoQuery, t.List, t.Description, t.CreatedAt).Scan(&t.ID)
 }
 
 func (r *TodoRepository) GetByID(ctx context.Context, id int) (*models.Todo, error) {
 	var t models.Todo
-	query := `SELECT id_list, todo_list, description, created_at FROM todos WHERE id_list = $1`
-	err := r.db.QueryRowContext(ctx, query, id).Scan(&t.IdList, &t.TodoList, &t.Description, &t.CreatedAt)
+	err := r.db.QueryRowContext(ctx, getTodoByIDQuery, id).Scan(&t.ID, &t.List, &t.Description, &t.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -37,12 +46,9 @@ func (r *TodoRepository) Update(ctx context.Context, t *models.Todo) error {
 	// Лучшим и более явным решением будет использовать конструкцию, в которой ты сам проверяешь, если поле не пустое, то ты его обновляешь
 	// Напиши такое решение используя библиотеку squirrel
 	// Под апдейт ты можешь создать новую модельку уже с указателями и там проверять на наличие переменных
-	query := `UPDATE todos 
-              SET todo_list = COALESCE($1, todo_list), 
-                  description = COALESCE($2, description), 
-                  created_at = COALESCE($3, created_at) 
-              WHERE id_list = $4`
-	res, err := r.db.ExecContext(ctx, query, t.TodoList, t.Description, t.CreatedAt, t.IdList)
+	// Напиши такое решение используя библиотеку squirrel
+	// Под апдейт ты можешь создать новую модельку уже с указателями и там проверять на наличие переменных
+	res, err := r.db.ExecContext(ctx, updateTodoQuery, t.List, t.Description, t.CreatedAt, t.ID)
 	if err != nil {
 		return err
 	}
@@ -55,8 +61,7 @@ func (r *TodoRepository) Update(ctx context.Context, t *models.Todo) error {
 }
 
 func (r *TodoRepository) Delete(ctx context.Context, id int) error {
-	query := `DELETE FROM todos WHERE id_list = $1`
-	res, err := r.db.ExecContext(ctx, query, id)
+	res, err := r.db.ExecContext(ctx, deleteTodoQuery, id)
 	if err != nil {
 		return err
 	}
