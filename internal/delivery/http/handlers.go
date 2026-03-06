@@ -44,83 +44,104 @@ func (h *TodoHandler) validateTodo(todo models.Todo) error {
 	return nil
 }
 
-func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
+func (h *TodoHandler) createTodo(w http.ResponseWriter, r *http.Request) {
 	var todo models.Todo
 	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
-		ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
+		errorResponse(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if err := h.validateTodo(todo); err != nil {
-		ErrorResponse(w, http.StatusBadRequest, err.Error())
+		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := h.repo.Create(r.Context(), &todo); err != nil {
-		ErrorResponse(w, http.StatusInternalServerError, "error creating todo")
+		errorResponse(w, http.StatusInternalServerError, "error creating todo")
 		return
 	}
 
 	h.writeJSON(w, http.StatusCreated, todo)
 }
 
-func (h *TodoHandler) GetTodoById(w http.ResponseWriter, r *http.Request) {
+func (h *TodoHandler) getTodoById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		ErrorResponse(w, http.StatusBadRequest, "invalid or missing ID")
+		errorResponse(w, http.StatusBadRequest, "invalid or missing ID")
 		return
 	}
 
 	todo, err := h.repo.GetByID(r.Context(), id)
 	if err != nil {
-		ErrorResponse(w, http.StatusNotFound, "todo not found")
+		errorResponse(w, http.StatusNotFound, "todo not found")
 		return
 	}
 
 	h.writeJSON(w, http.StatusOK, todo)
 }
 
-func (h *TodoHandler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
+func (h *TodoHandler) updateTodo(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		ErrorResponse(w, http.StatusBadRequest, "invalid or missing ID")
+		errorResponse(w, http.StatusBadRequest, "invalid or missing ID")
 		return
 	}
 
 	var todo models.Todo
 	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
-		ErrorResponse(w, http.StatusBadRequest, "invalid request body")
+		errorResponse(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	todo.ID = id
 
 	if err := h.validateTodo(todo); err != nil {
-		ErrorResponse(w, http.StatusBadRequest, err.Error())
+		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := h.repo.Update(r.Context(), &todo); err != nil {
-		ErrorResponse(w, http.StatusInternalServerError, "internal server error")
+		errorResponse(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	h.writeJSON(w, http.StatusOK, todo)
 }
 
-func (h *TodoHandler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
+func (h *TodoHandler) deleteTodo(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		ErrorResponse(w, http.StatusBadRequest, "invalid or missing ID")
+		errorResponse(w, http.StatusBadRequest, "invalid or missing ID")
 		return
 	}
 	if err := h.repo.Delete(r.Context(), id); err != nil {
-		ErrorResponse(w, http.StatusInternalServerError, "internal server error")
+		errorResponse(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, `{"message": "todo deleted successfully"}`)
+}
+
+func RegisterRoutes(handler *TodoHandler) *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/todos", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			handler.createTodo(w, r)
+		case http.MethodGet:
+			handler.getTodoById(w, r)
+		case http.MethodPut:
+			handler.updateTodo(w, r)
+		case http.MethodDelete:
+			handler.deleteTodo(w, r)
+		default:
+			errorResponse(w, http.StatusMethodNotAllowed, "method not allowed")
+		}
+	})
+
+	return mux
 }
