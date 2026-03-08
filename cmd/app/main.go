@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"theSone/internal/application"
 	delivery "theSone/internal/delivery/http"
 	"theSone/internal/repository/postgres"
 	"theSone/pkg"
@@ -12,7 +13,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// TODO: где папка application?
 func main() {
 	cfg, err := pkg.ReadConfig()
 	if err != nil {
@@ -36,7 +36,8 @@ func main() {
 	}
 
 	repo := postgres.NewTodoRepository(db)
-	handler := delivery.NewTodoHandler(repo)
+	app := application.NewApplication(repo)
+	handler := delivery.NewTodoHandler(app)
 
 	mux := delivery.RegisterRoutes(handler)
 
