@@ -13,6 +13,7 @@ type todoRepository interface {
 	Delete(ctx context.Context, id int) error
 }
 
+// TODO: добавь логгер в структуру
 type Application struct {
 	repo todoRepository
 }
@@ -29,6 +30,7 @@ func (a *Application) GetTodoByID(ctx context.Context, id int) (*models.Todo, er
 	return a.repo.GetByID(ctx, id)
 }
 
+// TODO: нейминг поменяй, не понятно что именно возвращает
 func (a *Application) GetAll(ctx context.Context) ([]*models.Todo, error) {
 	return a.repo.GetAll(ctx)
 }

@@ -9,17 +9,18 @@ import (
 	delivery "theSone/internal/delivery/http"
 	"theSone/internal/repository/postgres"
 	"theSone/pkg"
-
+	// TODO: поменя на pgx/v5
 	_ "github.com/lib/pq"
 )
 
+// TODO: сделай в pkg отдельный пекейдж с логгером, который ты в мейнике будешь инициализировать и во все слои прокидывать
 func main() {
 	cfg, err := pkg.ReadConfig()
 	if err != nil {
 		slog.Error("error loading config: %s", err.Error())
 		return
 	}
-
+	//TODO: вынеси в репозиторий
 	dbURL := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
 

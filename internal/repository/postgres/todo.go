@@ -20,6 +20,7 @@ const (
 	getAllTodosQuery = `SELECT id_list, todo_list, description, created_at FROM todos ORDER BY created_at DESC`
 )
 
+// TODO: добавь логгер в структуру
 type TodoRepository struct {
 	db *sql.DB
 }
@@ -51,6 +52,7 @@ func (r *TodoRepository) GetAll(ctx context.Context) ([]*models.Todo, error) {
 	var todos []*models.Todo
 	for rows.Next() {
 		var t models.Todo
+		// TODO: переиспользуй переменную и перепроверь это везде
 		if err := rows.Scan(&t.ID, &t.List, &t.Description, &t.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -88,6 +90,7 @@ func (r *TodoRepository) Update(ctx context.Context, t *models.Todo) error {
 		return err
 	}
 
+	// TODO: почему ошибку не обработал?
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
 		return sql.ErrNoRows
@@ -100,6 +103,7 @@ func (r *TodoRepository) Delete(ctx context.Context, id int) error {
 	if err != nil {
 		return err
 	}
+	// TODO: почему ошибку не обработал?
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
 		return sql.ErrNoRows
