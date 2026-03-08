@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// TODO: сделай на каждый слой свой конфиг, а в мейнике чтобы этот конфиг собирался из всех и дефолт не юзай
 type Config struct {
 	DBHost     string `env:"DB_HOST"`
 	DBPort     int    `env:"DB_PORT"`
@@ -15,6 +16,7 @@ type Config struct {
 }
 
 func ReadConfig() (*Config, error) {
+	// TODO: и что делать при обработке ошибки?
 	if err := godotenv.Load(); err != nil {
 	}
 	cfg := &Config{}
