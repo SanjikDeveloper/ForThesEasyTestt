@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"theSone/internal/models"
+
+	"github.com/Masterminds/squirrel"
 )
 
 const (
@@ -14,7 +16,8 @@ const (
                   description = COALESCE($2, description), 
                   created_at = COALESCE($3, created_at) 
               WHERE id_list = $4`
-	deleteTodoQuery = `DELETE FROM todos WHERE id_list = $1`
+	deleteTodoQuery  = `DELETE FROM todos WHERE id_list = $1`
+	getAllTodosQuery = `SELECT id_list, todo_list, description, created_at FROM todos ORDER BY created_at DESC`
 )
 
 type TodoRepository struct {
@@ -26,7 +29,6 @@ func NewTodoRepository(db *sql.DB) *TodoRepository {
 }
 
 func (r *TodoRepository) Create(ctx context.Context, t *models.Todo) error {
-	// TODO: У тебя при вызове функции каждый раз создается новая строка с одинаковым SQL. Лучше вынеси это в константы
 	return r.db.QueryRowContext(ctx, createTodoQuery, t.List, t.Description, t.CreatedAt).Scan(&t.ID)
 }
 
@@ -39,20 +41,53 @@ func (r *TodoRepository) GetByID(ctx context.Context, id int) (*models.Todo, err
 	return &t, nil
 }
 
+func (r *TodoRepository) GetAll(ctx context.Context) ([]*models.Todo, error) {
+	rows, err := r.db.QueryContext(ctx, getAllTodosQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var todos []*models.Todo
+	for rows.Next() {
+		var t models.Todo
+		if err := rows.Scan(&t.ID, &t.List, &t.Description, &t.CreatedAt); err != nil {
+			return nil, err
+		}
+		todos = append(todos, &t)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return todos, nil
+}
+
 func (r *TodoRepository) Update(ctx context.Context, t *models.Todo) error {
-	// Мы используем COALESCE($1, todo_list).
-	// Это значит: "Возьми новое значение, но если оно пустое ($1 is NULL), оставь старое".
-	// TODO: в такой конструкции легко запнуться и обновить данные на пустые значения. Ты перекладываешь ответственность на базу
-	// Лучшим и более явным решением будет использовать конструкцию, в которой ты сам проверяешь, если поле не пустое, то ты его обновляешь
-	// Напиши такое решение используя библиотеку squirrel
-	// Под апдейт ты можешь создать новую модельку уже с указателями и там проверять на наличие переменных
-	// Напиши такое решение используя библиотеку squirrel
-	// Под апдейт ты можешь создать новую модельку уже с указателями и там проверять на наличие переменных
-	res, err := r.db.ExecContext(ctx, updateTodoQuery, t.List, t.Description, t.CreatedAt, t.ID)
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	builder := psql.Update("todos").Where(squirrel.Eq{"id_list": t.ID})
+
+	if t.List != "" {
+		builder = builder.Set("todo_list", t.List)
+	}
+	if t.Description != "" {
+		builder = builder.Set("description", t.Description)
+	}
+	if !t.CreatedAt.IsZero() {
+		builder = builder.Set("created_at", t.CreatedAt)
+	}
+
+	query, args, err := builder.ToSql()
 	if err != nil {
 		return err
 	}
-	// TODO: почему не обрабатываешь ошибку?
+
+	res, err := r.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
 	rows, _ := res.RowsAffected()
 	if rows == 0 {
 		return sql.ErrNoRows

@@ -1,28 +1,21 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"theSone/internal/application"
 	"theSone/internal/models"
 )
 
-type todoRepository interface {
-	Create(ctx context.Context, t *models.Todo) error
-	GetByID(ctx context.Context, id int) (*models.Todo, error)
-	Update(ctx context.Context, t *models.Todo) error
-	Delete(ctx context.Context, id int) error
-}
-
 type TodoHandler struct {
-	repo todoRepository
+	app *application.Application
 }
 
-func NewTodoHandler(repo todoRepository) *TodoHandler {
-	return &TodoHandler{repo: repo}
+func NewTodoHandler(app *application.Application) *TodoHandler {
+	return &TodoHandler{app: app}
 }
 
 func (h *TodoHandler) writeJSON(w http.ResponseWriter, status int, v interface{}) {
@@ -56,12 +49,22 @@ func (h *TodoHandler) createTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.repo.Create(r.Context(), &todo); err != nil {
+	if err := h.app.CreateTodo(r.Context(), &todo); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "error creating todo")
 		return
 	}
 
 	h.writeJSON(w, http.StatusCreated, todo)
+}
+
+func (h *TodoHandler) getAllTodos(w http.ResponseWriter, r *http.Request) {
+	todos, err := h.app.GetAll(r.Context())
+	if err != nil {
+		errorResponse(w, http.StatusInternalServerError, "error fetching todos")
+		return
+	}
+
+	h.writeJSON(w, http.StatusOK, todos)
 }
 
 func (h *TodoHandler) getTodoById(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +75,7 @@ func (h *TodoHandler) getTodoById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	todo, err := h.repo.GetByID(r.Context(), id)
+	todo, err := h.app.GetTodoByID(r.Context(), id)
 	if err != nil {
 		errorResponse(w, http.StatusNotFound, "todo not found")
 		return
@@ -101,7 +104,7 @@ func (h *TodoHandler) updateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.repo.Update(r.Context(), &todo); err != nil {
+	if err := h.app.UpdateTodo(r.Context(), &todo); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -116,7 +119,7 @@ func (h *TodoHandler) deleteTodo(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusBadRequest, "invalid or missing ID")
 		return
 	}
-	if err := h.repo.Delete(r.Context(), id); err != nil {
+	if err := h.app.DeleteTodo(r.Context(), id); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -133,7 +136,11 @@ func RegisterRoutes(handler *TodoHandler) *http.ServeMux {
 		case http.MethodPost:
 			handler.createTodo(w, r)
 		case http.MethodGet:
-			handler.getTodoById(w, r)
+			if r.URL.Query().Get("id") != "" {
+				handler.getTodoById(w, r)
+			} else {
+				handler.getAllTodos(w, r)
+			}
 		case http.MethodPut:
 			handler.updateTodo(w, r)
 		case http.MethodDelete:
