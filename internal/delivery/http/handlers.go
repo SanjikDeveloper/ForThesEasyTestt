@@ -10,7 +10,9 @@ import (
 	"theSone/internal/models"
 )
 
+// TODO: добавь логгер в структуру
 type TodoHandler struct {
+	// TODO: замени это на интерфейс, который описывает, какие тебе методы нужны от аппликейшн слоя
 	app *application.Application
 }
 
@@ -119,16 +121,19 @@ func (h *TodoHandler) deleteTodo(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusBadRequest, "invalid or missing ID")
 		return
 	}
+	// TODO: не надо новую переменную инициализировать
 	if err := h.app.DeleteTodo(r.Context(), id); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
+	// TODO: это тут не нужно, статуса 200 достаточно, чтобы понять, что все успешно
 	fmt.Fprintf(w, `{"message": "todo deleted successfully"}`)
 }
 
 func RegisterRoutes(handler *TodoHandler) *http.ServeMux {
+	// TODO: перепиши роутер на fiber
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/todos", func(w http.ResponseWriter, r *http.Request) {
