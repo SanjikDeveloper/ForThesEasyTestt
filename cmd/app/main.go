@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"theSone/internal/application"
 	delivery "theSone/internal/delivery/http"
 	"theSone/internal/repository/postgres"
@@ -42,10 +41,10 @@ func main() {
 	app := application.NewApplication(repo, log)
 	handler := delivery.NewTodoHandler(app)
 
-	mux := delivery.RegisterRoutes(handler)
+	fiberApp := delivery.RegisterRoutes(handler)
 
 	fmt.Printf("Server is running on %s\n", cfg.App.ServerPort)
-	if err := http.ListenAndServe(cfg.App.ServerPort, mux); err != nil {
+	if err := fiberApp.Listen(cfg.App.ServerPort); err != nil {
 		slog.Error("server error", "error", err.Error())
 	}
 }

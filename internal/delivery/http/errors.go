@@ -1,18 +1,27 @@
 package http
 
 import (
-	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 )
 
-// TODO: ты так и не сделал нормальный враппинг ошибок, должно быть что-то по типу
 func errorResponse(w http.ResponseWriter, status int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(map[string]string{"error": message}); err != nil {
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+	switch status {
+	case http.StatusOK:
+		w.WriteHeader(http.StatusOK)
+	case http.StatusBadRequest:
+		w.WriteHeader(http.StatusBadRequest)
+	case http.StatusUnauthorized:
+		w.WriteHeader(http.StatusUnauthorized)
+	case http.StatusForbidden:
+		w.WriteHeader(http.StatusForbidden)
+	case http.StatusNotFound:
+		w.WriteHeader(http.StatusNotFound)
+	case http.StatusInternalServerError:
+		w.WriteHeader(http.StatusInternalServerError)
+	default:
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
