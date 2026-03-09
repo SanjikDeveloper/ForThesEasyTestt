@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"theSone/internal/models"
+	"theSone/pkg/logger"
 )
 
 type todoRepository interface {
@@ -13,13 +14,13 @@ type todoRepository interface {
 	Delete(ctx context.Context, id int) error
 }
 
-// TODO: добавь логгер в структуру
 type Application struct {
-	repo todoRepository
+	repo   todoRepository
+	logger *logger.Logger
 }
 
-func NewApplication(repo todoRepository) *Application {
-	return &Application{repo: repo}
+func NewApplication(repo todoRepository, logger *logger.Logger) *Application {
+	return &Application{repo: repo, logger: logger}
 }
 
 func (a *Application) CreateTodo(ctx context.Context, todo *models.Todo) error {
@@ -30,8 +31,7 @@ func (a *Application) GetTodoByID(ctx context.Context, id int) (*models.Todo, er
 	return a.repo.GetByID(ctx, id)
 }
 
-// TODO: нейминг поменяй, не понятно что именно возвращает
-func (a *Application) GetAll(ctx context.Context) ([]*models.Todo, error) {
+func (a *Application) GetAllTodo(ctx context.Context) ([]*models.Todo, error) {
 	return a.repo.GetAll(ctx)
 }
 
