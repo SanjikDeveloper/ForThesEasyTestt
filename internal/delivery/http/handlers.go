@@ -8,11 +8,16 @@ import (
 	"strconv"
 	"theSone/internal/application"
 	"theSone/internal/models"
+	"theSone/pkg/logger"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/adaptor"
 )
 
 // TODO: добавь логгер в структуру
 type TodoHandler struct {
-	app *application.Application
+	logger *logger.Logger
+	app    *application.Application
 }
 
 func NewTodoHandler(app *application.Application) *TodoHandler {
@@ -120,39 +125,28 @@ func (h *TodoHandler) deleteTodo(w http.ResponseWriter, r *http.Request) {
 		errorResponse(w, http.StatusBadRequest, "invalid or missing ID")
 		return
 	}
-	// TODO: не надо новую переменную инициализировать
+
 	if err := h.app.DeleteTodo(r.Context(), id); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	// TODO: это тут не нужно, статуса 200 достаточно, чтобы понять, что все успешно
-	fmt.Fprintf(w, `{"message": "todo deleted successfully"}`)
+	fmt.Fprintf(w, "%s", http.StatusText(http.StatusOK))
 }
 
-func RegisterRoutes(handler *TodoHandler) *http.ServeMux {
-	// TODO: перепиши роутер на fiber
-	mux := http.NewServeMux()
+func RegisterRoutes(handler *TodoHandler) *fiber.App {
+	app := fiber.New()
 
-	mux.HandleFunc("/todos", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodPost:
-			handler.createTodo(w, r)
-		case http.MethodGet:
-			if r.URL.Query().Get("id") != "" {
-				handler.getTodoById(w, r)
-			} else {
-				handler.getAllTodos(w, r)
-			}
-		case http.MethodPut:
-			handler.updateTodo(w, r)
-		case http.MethodDelete:
-			handler.deleteTodo(w, r)
-		default:
-			errorResponse(w, http.StatusMethodNotAllowed, "method not allowed")
+	app.Post("/todos", adaptor.HTTPHandlerFunc(handler.createTodo))
+	app.Get("/todos", func(c *fiber.Ctx) error {
+		if c.Query("id") != "" {
+			return adaptor.HTTPHandlerFunc(handler.getTodoById)(c)
 		}
+		return adaptor.HTTPHandlerFunc(handler.getAllTodos)(c)
 	})
+	app.Put("/todos", adaptor.HTTPHandlerFunc(handler.updateTodo))
+	app.Delete("/todos", adaptor.HTTPHandlerFunc(handler.deleteTodo))
 
-	return mux
+	return app
 }
