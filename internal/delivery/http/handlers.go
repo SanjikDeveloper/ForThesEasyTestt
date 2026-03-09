@@ -12,7 +12,6 @@ import (
 
 // TODO: добавь логгер в структуру
 type TodoHandler struct {
-	// TODO: замени это на интерфейс, который описывает, какие тебе методы нужны от аппликейшн слоя
 	app *application.Application
 }
 
@@ -60,7 +59,7 @@ func (h *TodoHandler) createTodo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TodoHandler) getAllTodos(w http.ResponseWriter, r *http.Request) {
-	todos, err := h.app.GetAll(r.Context())
+	todos, err := h.app.GetAllTodo(r.Context())
 	if err != nil {
 		errorResponse(w, http.StatusInternalServerError, "error fetching todos")
 		return
