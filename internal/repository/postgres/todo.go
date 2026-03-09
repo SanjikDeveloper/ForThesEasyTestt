@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"theSone/internal/models"
+	"theSone/pkg/logger"
 
 	"github.com/Masterminds/squirrel"
 )
@@ -20,13 +21,13 @@ const (
 	getAllTodosQuery = `SELECT id_list, todo_list, description, created_at FROM todos ORDER BY created_at DESC`
 )
 
-// TODO: добавь логгер в структуру
 type TodoRepository struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *logger.Logger
 }
 
-func NewTodoRepository(db *sql.DB) *TodoRepository {
-	return &TodoRepository{db: db}
+func NewTodoRepository(db *sql.DB, logger *logger.Logger) *TodoRepository {
+	return &TodoRepository{db: db, logger: logger}
 }
 
 func (r *TodoRepository) Create(ctx context.Context, t *models.Todo) error {
@@ -51,12 +52,11 @@ func (r *TodoRepository) GetAll(ctx context.Context) ([]*models.Todo, error) {
 
 	var todos []*models.Todo
 	for rows.Next() {
-		var t models.Todo
-		// TODO: переиспользуй переменную и перепроверь это везде
+		t := new(models.Todo)
 		if err := rows.Scan(&t.ID, &t.List, &t.Description, &t.CreatedAt); err != nil {
 			return nil, err
 		}
-		todos = append(todos, &t)
+		todos = append(todos, t)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -90,8 +90,10 @@ func (r *TodoRepository) Update(ctx context.Context, t *models.Todo) error {
 		return err
 	}
 
-	// TODO: почему ошибку не обработал?
-	rows, _ := res.RowsAffected()
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if rows == 0 {
 		return sql.ErrNoRows
 	}
@@ -103,8 +105,10 @@ func (r *TodoRepository) Delete(ctx context.Context, id int) error {
 	if err != nil {
 		return err
 	}
-	// TODO: почему ошибку не обработал?
-	rows, _ := res.RowsAffected()
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
 	if rows == 0 {
 		return sql.ErrNoRows
 	}

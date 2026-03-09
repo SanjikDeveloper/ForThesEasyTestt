@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log/slog"
 	"theSone/internal/application"
@@ -9,9 +8,6 @@ import (
 	"theSone/internal/repository/postgres"
 	"theSone/pkg"
 	logger "theSone/pkg/logger"
-
-	// TODO: поменя на pgx/v5
-	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -21,23 +17,14 @@ func main() {
 		return
 	}
 	log := logger.NewLogger(&cfg.Logger)
-	//TODO: вынеси в репозиторий
-	dbURL := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Repo.DBHost, cfg.Repo.DBPort, cfg.Repo.DBUser, cfg.Repo.DBPassword, cfg.Repo.DBName)
-
-	db, err := sql.Open("postgres", dbURL)
+	db, err := postgres.ConnectDB(&cfg.Repo)
 	if err != nil {
-		slog.Error("error opening db", "error", err.Error())
+		slog.Error("error connecting to db", "error", err.Error())
 		return
 	}
 	defer db.Close()
 
-	if err := db.Ping(); err != nil {
-		slog.Error("error pinging db", "error", err.Error())
-		return
-	}
-
-	repo := postgres.NewTodoRepository(db)
+	repo := postgres.NewTodoRepository(db, log)
 	app := application.NewApplication(repo, log)
 	handler := delivery.NewTodoHandler(app)
 

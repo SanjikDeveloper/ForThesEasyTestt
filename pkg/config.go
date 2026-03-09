@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"log/slog"
 	"theSone/internal/repository/postgres"
 	"theSone/pkg/logger"
 
@@ -19,9 +20,8 @@ type Config struct {
 }
 
 func ReadConfig() (*Config, error) {
-	// TODO: и что делать при обработке ошибки?
 	if err := godotenv.Load(); err != nil {
-		// Log error if needed or ignore if .env is optional
+		slog.Warn(".env file not found, using environment variables", "error", err.Error())
 	}
 	cfg := &Config{}
 	if err := env.Parse(cfg); err != nil {
