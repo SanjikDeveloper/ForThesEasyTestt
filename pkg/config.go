@@ -8,7 +8,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// TODO: сделай на каждый слой свой конфиг, а в мейнике чтобы этот конфиг собирался из всех и дефолт не юзай
 type AppConfig struct {
 	ServerPort string `env:"SERVER_PORT" envDefault:":8080"`
 }
