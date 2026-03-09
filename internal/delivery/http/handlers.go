@@ -14,7 +14,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 )
 
-// TODO: добавь логгер в структуру
 type TodoHandler struct {
 	logger *logger.Logger
 	app    *application.Application
