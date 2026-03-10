@@ -29,11 +29,10 @@ func main() {
 	app := application.NewApplication(repo, log)
 	handler := delivery.NewTodoHandler(app)
 
-	// TODO: я говорил вынести подключение на уровень http
-	fiberApp := delivery.RegisterRoutes(handler)
+	server := delivery.NewServer(handler)
 
 	fmt.Printf("Server is running on %s\n", cfg.App.ServerPort)
-	if err := fiberApp.Listen(cfg.App.ServerPort); err != nil {
+	if err := server.Start(cfg.App.ServerPort); err != nil {
 		slog.Error("server error", "error", err.Error())
 	}
 }
