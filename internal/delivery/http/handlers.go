@@ -14,6 +14,20 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 )
 
+type Server struct {
+	app *fiber.App
+}
+
+func NewServer(handler *TodoHandler) *Server {
+	return &Server{
+		app: RegisterRoutes(handler),
+	}
+}
+
+func (s *Server) Start(addr string) error {
+	return s.app.Listen(addr)
+}
+
 type TodoHandler struct {
 	logger *logger.Logger
 	//TODO: где интерфейс? Ты должен был интерфейс добавить сюда
