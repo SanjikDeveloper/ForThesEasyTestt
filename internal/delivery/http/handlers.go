@@ -16,7 +16,8 @@ import (
 
 type TodoHandler struct {
 	logger *logger.Logger
-	app    *application.Application
+	//TODO: где интерфейс? Ты должен был интерфейс добавить сюда
+	app *application.Application
 }
 
 func NewTodoHandler(app *application.Application) *TodoHandler {
@@ -42,6 +43,7 @@ func (h *TodoHandler) validateTodo(todo models.Todo) error {
 	return nil
 }
 
+// TODO: все ручки тоже переделай на fiber...
 func (h *TodoHandler) createTodo(w http.ResponseWriter, r *http.Request) {
 	var todo models.Todo
 	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
@@ -98,12 +100,15 @@ func (h *TodoHandler) updateTodo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var todo models.Todo
+	// TODO: я же говорил везде перепроверить на то, что ты переиспользуешь переменные
+	// тут можно просто сделать err =
 	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
 		errorResponse(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	todo.ID = id
 
+	// тут тоже просто err =
 	if err := h.validateTodo(todo); err != nil {
 		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
@@ -125,6 +130,8 @@ func (h *TodoHandler) deleteTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// тут тоже err =
+	// ты сам должен все это проверить
 	if err := h.app.DeleteTodo(r.Context(), id); err != nil {
 		errorResponse(w, http.StatusInternalServerError, "internal server error")
 		return
@@ -136,9 +143,10 @@ func (h *TodoHandler) deleteTodo(w http.ResponseWriter, r *http.Request) {
 
 func RegisterRoutes(handler *TodoHandler) *fiber.App {
 	app := fiber.New()
-
+	// TODO: ручки во множественном числе не надо называть
 	app.Post("/todos", adaptor.HTTPHandlerFunc(handler.createTodo))
 	app.Get("/todos", func(c *fiber.Ctx) error {
+		// TODO: просто сделай отдельную ручку на /todo/:id
 		if c.Query("id") != "" {
 			return adaptor.HTTPHandlerFunc(handler.getTodoById)(c)
 		}
