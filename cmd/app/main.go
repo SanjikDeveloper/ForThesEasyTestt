@@ -17,6 +17,7 @@ func main() {
 		return
 	}
 	log := logger.NewLogger(&cfg.Logger)
+	// TODO: я же говорил вынести подключение на уровень репозитория
 	db, err := postgres.ConnectDB(&cfg.Repo)
 	if err != nil {
 		slog.Error("error connecting to db", "error", err.Error())
@@ -28,6 +29,7 @@ func main() {
 	app := application.NewApplication(repo, log)
 	handler := delivery.NewTodoHandler(app)
 
+	// TODO: я говорил вынести подключение на уровень http
 	fiberApp := delivery.RegisterRoutes(handler)
 
 	fmt.Printf("Server is running on %s\n", cfg.App.ServerPort)
