@@ -101,15 +101,15 @@ func (h *TodoHandler) updateTodo(w http.ResponseWriter, r *http.Request) {
 
 	var todo models.Todo
 	// TODO: я же говорил везде перепроверить на то, что ты переиспользуешь переменные
-	// тут можно просто сделать err =
-	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
+
+	if err = json.NewDecoder(r.Body).Decode(&todo); err != nil {
 		errorResponse(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	todo.ID = id
 
 	// тут тоже просто err =
-	if err := h.validateTodo(todo); err != nil {
+	if err = h.validateTodo(todo); err != nil {
 		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
