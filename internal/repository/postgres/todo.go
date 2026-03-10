@@ -23,11 +23,32 @@ const (
 
 type TodoRepository struct {
 	db     *sql.DB
+	cfg    *Config
 	logger *logger.Logger
 }
 
-func NewTodoRepository(db *sql.DB, logger *logger.Logger) *TodoRepository {
-	return &TodoRepository{db: db, logger: logger}
+func NewTodoRepository(cfg *Config, logger *logger.Logger) *TodoRepository {
+	return &TodoRepository{cfg: cfg, logger: logger}
+}
+
+func (r *TodoRepository) Init() error {
+	db, err := ConnectDB(r.cfg)
+	if err != nil {
+		return err
+	}
+	r.db = db
+	return nil
+}
+
+func (r *TodoRepository) Run(ctx context.Context) error {
+	return nil
+}
+
+func (r *TodoRepository) Stop() error {
+	if r.db != nil {
+		return r.db.Close()
+	}
+	return nil
 }
 
 func (r *TodoRepository) Create(ctx context.Context, t *models.Todo) error {
