@@ -9,10 +9,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// TODO: этот конфиг относится к http же
 type AppConfig struct {
 	ServerPort string `env:"SERVER_PORT" envDefault:":8080"`
 }
 
+// TODO: отправить этот конфиг лучше в мейник
+// TODO: вынеси файл конфиг в папку конфиг, почему у нее пекейдж pkg
 type Config struct {
 	Repo   postgres.Config `envPrefix:"REPO_"`
 	Logger logger.Config   `envPrefix:"LOGGER_"`

@@ -15,7 +15,8 @@ type todoRepository interface {
 }
 
 type Application struct {
-	repo   todoRepository
+	repo todoRepository
+	// TODO: сделай интерфейс логгера и в pkg реализуй данный интерфейс, в структуре должен быть только интерфейс, без дополнительный зависимостей
 	logger *logger.Logger
 }
 
