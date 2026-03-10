@@ -24,6 +24,18 @@ func NewApplication(repo todoRepository, logger *logger.Logger) *Application {
 	return &Application{repo: repo, logger: logger}
 }
 
+func (a *Application) Init() error {
+	return nil
+}
+
+func (a *Application) Run(ctx context.Context) error {
+	return nil
+}
+
+func (a *Application) Stop() error {
+	return nil
+}
+
 func (a *Application) CreateTodo(ctx context.Context, todo *models.Todo) error {
 	return a.repo.Create(ctx, todo)
 }

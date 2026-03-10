@@ -1,38 +1,39 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log/slog"
 	"theSone/internal/application"
 	delivery "theSone/internal/delivery/http"
 	"theSone/internal/repository/postgres"
-	"theSone/pkg"
+	"theSone/pkg/config"
 	logger "theSone/pkg/logger"
+	service "theSone/pkg/services"
 )
 
+type Config struct {
+	Repo   postgres.Config    `envPrefix:"REPO_"`
+	Logger logger.Config      `envPrefix:"LOGGER_"`
+	App    delivery.AppConfig `envPrefix:"APP_"`
+}
+
 func main() {
-	cfg, err := pkg.ReadConfig()
+	cfg, err := config.ReadConfig()
 	if err != nil {
 		slog.Error("error loading config", "error", err.Error())
 		return
 	}
 	log := logger.NewLogger(&cfg.Logger)
-	// TODO: я же говорил вынести подключение на уровень репозитория
-	db, err := postgres.ConnectDB(&cfg.Repo)
-	if err != nil {
-		slog.Error("error connecting to db", "error", err.Error())
-		return
-	}
-	defer db.Close()
 
-	repo := postgres.NewTodoRepository(db, log)
-	app := application.NewApplication(repo, log)
-	handler := delivery.NewTodoHandler(app)
+	repos := postgres.NewTodoRepository(&cfg.Repo, log)
+	app := application.NewApplication(repos, log)
+	server := delivery.NewServer(app, cfg.App.ServerPort)
 
-	server := delivery.NewServer(handler)
+	manager := service.NewManager(log)
+	manager.AddService(repos, app, server)
 
-	fmt.Printf("Server is running on %s\n", cfg.App.ServerPort)
-	if err := server.Start(cfg.App.ServerPort); err != nil {
-		slog.Error("server error", "error", err.Error())
+	log.Info("Starting todoservice")
+	if err := manager.Run(context.Background()); err != nil {
+		log.Error("failed to start", "error", err.Error())
 	}
 }
