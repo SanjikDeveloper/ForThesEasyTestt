@@ -1,6 +1,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,17 +16,28 @@ import (
 )
 
 type Server struct {
-	app *fiber.App
+	app  *fiber.App
+	addr string
 }
 
-func NewServer(handler *TodoHandler) *Server {
+func NewServer(app *application.Application, addr string) *Server {
+	handler := NewTodoHandler(app)
 	return &Server{
-		app: RegisterRoutes(handler),
+		app:  RegisterRoutes(handler),
+		addr: addr,
 	}
 }
 
-func (s *Server) Start(addr string) error {
-	return s.app.Listen(addr)
+func (s *Server) Init() error {
+	return nil
+}
+
+func (s *Server) Run(ctx context.Context) error {
+	return s.app.Listen(s.addr)
+}
+
+func (s *Server) Stop() error {
+	return s.app.Shutdown()
 }
 
 type TodoHandler struct {
