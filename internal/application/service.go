@@ -6,6 +6,13 @@ import (
 	"theSone/pkg/logger"
 )
 
+type Logger interface {
+	Error(format string, v ...interface{})
+	Warn(format string, v ...interface{})
+	Info(format string, v ...interface{})
+	Debug(format string, v ...interface{})
+}
+
 type todoRepository interface {
 	Create(ctx context.Context, t *models.Todo) error
 	GetByID(ctx context.Context, id int) (*models.Todo, error)
@@ -15,9 +22,8 @@ type todoRepository interface {
 }
 
 type Application struct {
-	repo todoRepository
-	// TODO: сделай интерфейс логгера и в pkg реализуй данный интерфейс, в структуре должен быть только интерфейс, без дополнительный зависимостей
-	logger *logger.Logger
+	repo   todoRepository
+	logger Logger
 }
 
 func NewApplication(repo todoRepository, logger *logger.Logger) *Application {
