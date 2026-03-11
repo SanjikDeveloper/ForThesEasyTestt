@@ -56,19 +56,18 @@ func (h *TodoHandler) validateTodo(todo models.Todo) error {
 	return nil
 }
 
-// TODO: все ручки тоже переделай на fiber...
 func (h *TodoHandler) createTodo(c *fiber.Ctx) error {
 	var todo models.Todo
 	if err := c.BodyParser(&todo); err != nil {
-		return errorResponse(c, fiber.StatusBadRequest, "Invalid request body")
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "Invalid request body"))
 	}
 
 	if err := h.validateTodo(todo); err != nil {
-		return errorResponse(c, fiber.StatusBadRequest, err.Error())
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, err.Error()))
 	}
 
 	if err := h.app.CreateTodo(c.Context(), &todo); err != nil {
-		return errorResponse(c, fiber.StatusInternalServerError, "error creating todo")
+		return h.errorResponse(c, err)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(todo)
@@ -77,7 +76,7 @@ func (h *TodoHandler) createTodo(c *fiber.Ctx) error {
 func (h *TodoHandler) getAllTodos(c *fiber.Ctx) error {
 	todos, err := h.app.GetAllTodo(c.Context())
 	if err != nil {
-		return errorResponse(c, fiber.StatusInternalServerError, "error fetching todos")
+		return h.errorResponse(c, err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(todos)
@@ -86,16 +85,16 @@ func (h *TodoHandler) getAllTodos(c *fiber.Ctx) error {
 func (h *TodoHandler) getTodoById(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	if idStr == "" {
-		idStr = c.Query("id") // Fallback for query param if any
+		idStr = c.Query("id")
 	}
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return errorResponse(c, fiber.StatusBadRequest, "invalid or missing ID")
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "invalid or missing ID"))
 	}
 
 	todo, err := h.app.GetTodoByID(c.Context(), id)
 	if err != nil {
-		return errorResponse(c, fiber.StatusNotFound, "todo not found")
+		return h.errorResponse(c, err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(todo)
@@ -108,21 +107,21 @@ func (h *TodoHandler) updateTodo(c *fiber.Ctx) error {
 	}
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return errorResponse(c, fiber.StatusBadRequest, "invalid or missing ID")
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "invalid or missing ID"))
 	}
 
 	var todo models.Todo
 	if err = c.BodyParser(&todo); err != nil {
-		return errorResponse(c, fiber.StatusBadRequest, "invalid request body")
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "invalid request body"))
 	}
 	todo.ID = id
 
 	if err = h.validateTodo(todo); err != nil {
-		return errorResponse(c, fiber.StatusBadRequest, err.Error())
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, err.Error()))
 	}
 
 	if err = h.app.UpdateTodo(c.Context(), &todo); err != nil {
-		return errorResponse(c, fiber.StatusInternalServerError, "internal server error")
+		return h.errorResponse(c, err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(todo)
@@ -135,11 +134,11 @@ func (h *TodoHandler) deleteTodo(c *fiber.Ctx) error {
 	}
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		return errorResponse(c, fiber.StatusBadRequest, "invalid or missing ID")
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "invalid or missing ID"))
 	}
 
 	if err := h.app.DeleteTodo(c.Context(), id); err != nil {
-		return errorResponse(c, fiber.StatusInternalServerError, "internal server error")
+		return h.errorResponse(c, err)
 	}
 
 	return c.SendStatus(fiber.StatusOK)

@@ -18,8 +18,8 @@ type Config struct {
 }
 
 func main() {
-	cfg, err := config.ReadConfig()
-	if err != nil {
+	var cfg Config
+	if err := config.ReadConfig(&cfg); err != nil {
 		slog.Error("error loading config", "error", err.Error())
 		return
 	}
@@ -27,7 +27,7 @@ func main() {
 
 	repos := postgres.NewTodoRepository(&cfg.Repo, log)
 	app := application.NewApplication(repos, log)
-	server := delivery.NewServer(app, cfg.App.ServerPort)
+	server := delivery.NewServer(app, cfg.App.Port)
 
 	manager := service.NewManager(log)
 	manager.AddService(repos, app, server)
