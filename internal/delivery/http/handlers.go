@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"strconv"
-	"theSone/internal/application"
 	"theSone/internal/models"
 	"theSone/pkg/logger"
 
@@ -16,7 +15,7 @@ type Server struct {
 	addr string
 }
 
-func NewServer(app *application.Application, addr string) *Server {
+func NewServer(app TodoService, addr string) *Server {
 	handler := NewTodoHandler(app)
 	return &Server{
 		app:  RegisterRoutes(handler),
@@ -36,13 +35,20 @@ func (s *Server) Stop() error {
 	return s.app.Shutdown()
 }
 
-type TodoHandler struct {
-	logger *logger.Logger
-	//TODO: где интерфейс? Ты должен был интерфейс добавить сюда
-	app *application.Application
+type TodoService interface {
+	CreateTodo(ctx context.Context, todo *models.Todo) error
+	GetTodoByID(ctx context.Context, id int) (*models.Todo, error)
+	GetAllTodo(ctx context.Context) ([]*models.Todo, error)
+	UpdateTodo(ctx context.Context, todo *models.Todo) error
+	DeleteTodo(ctx context.Context, id int) error
 }
 
-func NewTodoHandler(app *application.Application) *TodoHandler {
+type TodoHandler struct {
+	logger *logger.Logger
+	app    TodoService
+}
+
+func NewTodoHandler(app TodoService) *TodoHandler {
 	return &TodoHandler{app: app}
 }
 
