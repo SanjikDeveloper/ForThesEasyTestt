@@ -1,36 +1,54 @@
 package http
 
 import (
+	"database/sql"
 	"errors"
 	"log"
-	"net/http"
+	"theSone/internal/models"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// TODO: посмотри снова пример, ты тут принимаешь статус и отдаешь этот статус, выходит масло масленное, даже непонятно для чеео этот метод нужен
-// Если ты просто повторяешь тот статус, который передал. Посмотри пример ниже, у тебя есть кастомные ошибки приложения, ты кастомную ошибку приложения
-// Разворачиваешь и дальше решаешь, что отправить
-func errorResponse(c *fiber.Ctx, status int, message string) error {
+func (h *TodoHandler) errorResponse(c *fiber.Ctx, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var fiberErr *fiber.Error
+	if errors.As(err, &fiberErr) {
+		return c.Status(fiberErr.Code).JSON(fiber.Map{
+			"error": fiberErr.Message,
+		})
+	}
+
+	var status int
+	var message string
+
+	switch {
+	case errors.Is(err, models.ErrNotFound), errors.Is(err, sql.ErrNoRows):
+		status = fiber.StatusNotFound
+		message = "Todo not found"
+	case errors.Is(err, models.ErrInvalidInput):
+		status = fiber.StatusBadRequest
+		message = "Invalid input data"
+	case errors.Is(err, models.ErrUnauthorized):
+		status = fiber.StatusUnauthorized
+		message = "Unauthorized"
+	default:
+		status = fiber.StatusInternalServerError
+		message = "Internal server error"
+
+		if h.app != nil {
+			logInternalError(err)
+		}
+	}
+
 	return c.Status(status).JSON(fiber.Map{
 		"error": message,
 	})
 }
 
-var (
-	exampleErrorNotFound       = errors.New("not found")
-	exampleErrorInvalidRequest = errors.New("invalid request")
-)
+func logInternalError(err error) {
 
-// Пример
-func (h *TodoHandler) exampleErrorResponse(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, exampleErrorNotFound):
-		w.WriteHeader(http.StatusNotFound)
-	case errors.Is(err, exampleErrorInvalidRequest):
-		w.WriteHeader(http.StatusBadRequest)
-	default:
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Println(err)
-	}
+	log.Printf("Internal error: %+v", err)
 }
