@@ -4,28 +4,17 @@ import (
 	"errors"
 	"log"
 	"net/http"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 // TODO: посмотри снова пример, ты тут принимаешь статус и отдаешь этот статус, выходит масло масленное, даже непонятно для чеео этот метод нужен
 // Если ты просто повторяешь тот статус, который передал. Посмотри пример ниже, у тебя есть кастомные ошибки приложения, ты кастомную ошибку приложения
 // Разворачиваешь и дальше решаешь, что отправить
-func errorResponse(w http.ResponseWriter, status int, message string) {
-	switch status {
-	case http.StatusOK:
-		w.WriteHeader(http.StatusOK)
-	case http.StatusBadRequest:
-		w.WriteHeader(http.StatusBadRequest)
-	case http.StatusUnauthorized:
-		w.WriteHeader(http.StatusUnauthorized)
-	case http.StatusForbidden:
-		w.WriteHeader(http.StatusForbidden)
-	case http.StatusNotFound:
-		w.WriteHeader(http.StatusNotFound)
-	case http.StatusInternalServerError:
-		w.WriteHeader(http.StatusInternalServerError)
-	default:
-		w.WriteHeader(http.StatusInternalServerError)
-	}
+func errorResponse(c *fiber.Ctx, status int, message string) error {
+	return c.Status(status).JSON(fiber.Map{
+		"error": message,
+	})
 }
 
 var (
