@@ -9,6 +9,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// TODO: в принципе мессадж нужен только если фронтенд просит что-то отправлять, чтобы самим что-то отрисовать от твоего сообщения
+// можно убрать, а так не принципиально. Статус коды уже почти всю инфу говорят
 func (h *TodoHandler) errorResponse(c *fiber.Ctx, err error) error {
 	if err == nil {
 		return nil
