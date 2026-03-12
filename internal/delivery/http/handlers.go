@@ -157,6 +157,8 @@ func RegisterRoutes(handler *TodoHandler) *fiber.App {
 	api.Post("/", handler.createTodo)
 	api.Get("/", handler.getAllTodos)
 	api.Get("/:id", handler.getTodoById)
+	// TODO: для апдейта тебе не надо брать из пути :id, ты можешь сразу из реквеста взять айди
+	// TODO: под роутер сделай отдельный файл, методы связанные с todo также в отдельный файл
 	api.Put("/:id", handler.updateTodo)
 	api.Delete("/:id", handler.deleteTodo)
 
