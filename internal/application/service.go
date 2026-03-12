@@ -6,6 +6,7 @@ import (
 	"theSone/pkg/logger"
 )
 
+// TODO: можешь этот интерфейс вынести в сам pkg/logger и везде подтягивать, тож норм практика
 type Logger interface {
 	Error(format string, v ...interface{})
 	Warn(format string, v ...interface{})
