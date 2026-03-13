@@ -7,10 +7,12 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// TODO: нигде не используется же. Можно убрать
 type Storage struct {
 	DB *sql.DB
 }
 
+// TODO: нигде не используется же. Можно убрать
 func NewStorage(cfg *Config) (*Storage, error) {
 	db, err := ConnectDB(cfg)
 	if err != nil {
