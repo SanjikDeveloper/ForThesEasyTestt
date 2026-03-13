@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"theSone/internal/application"
+	"theSone/pkg/logger"
 )
 
 type Service interface {
@@ -15,11 +15,11 @@ type Service interface {
 }
 
 type Manager struct {
-	log      application.Logger
+	log      logger.Logger
 	services []Service
 }
 
-func NewManager(log application.Logger) *Manager {
+func NewManager(log logger.Logger) *Manager {
 	return &Manager{log: log}
 }
 

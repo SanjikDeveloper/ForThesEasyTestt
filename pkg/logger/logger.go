@@ -6,31 +6,38 @@ import (
 	"strings"
 )
 
-type Logger struct {
+type Logger interface {
+	Info(msg string, args ...any)
+	Error(msg string, args ...any)
+	Warn(msg string, args ...any)
+	Debug(msg string, args ...any)
+}
+
+type slogLogger struct {
 	logger slog.Logger
 }
 
-func NewLogger(cfg *Config) *Logger {
+func NewLogger(cfg *Config) Logger {
 	opts := &slog.HandlerOptions{
 		Level: getLoggerLevel(cfg.Level),
 	}
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
-	return &Logger{logger: *logger}
+	return &slogLogger{logger: *logger}
 }
 
-func (l *Logger) Info(msg string, args ...any) {
+func (l *slogLogger) Info(msg string, args ...any) {
 	l.logger.Info(msg, args...)
 }
 
-func (l *Logger) Error(msg string, args ...any) {
+func (l *slogLogger) Error(msg string, args ...any) {
 	l.logger.Error(msg, args...)
 }
 
-func (l *Logger) Warn(msg string, args ...any) {
+func (l *slogLogger) Warn(msg string, args ...any) {
 	l.logger.Warn(msg, args...)
 }
 
-func (l *Logger) Debug(msg string, args ...any) {
+func (l *slogLogger) Debug(msg string, args ...any) {
 	l.logger.Debug(msg, args...)
 }
 

@@ -27,7 +27,7 @@ func main() {
 
 	repos := postgres.NewTodoRepository(&cfg.Repo, log)
 	app := application.NewApplication(repos, log)
-	server := delivery.NewServer(app, cfg.App.Port)
+	server := delivery.NewServer(app, cfg.App.Port, log)
 
 	manager := service.NewManager(log)
 	manager.AddService(repos, app, server)
