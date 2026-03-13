@@ -24,11 +24,11 @@ const (
 type TodoRepository struct {
 	db     *sql.DB
 	cfg    *Config
-	logger *logger.Logger
+	logger logger.Logger
 }
 
-func NewTodoRepository(cfg *Config, logger *logger.Logger) *TodoRepository {
-	return &TodoRepository{cfg: cfg, logger: logger}
+func NewTodoRepository(cfg *Config, log logger.Logger) *TodoRepository {
+	return &TodoRepository{cfg: cfg, logger: log}
 }
 
 func (r *TodoRepository) Init() error {
