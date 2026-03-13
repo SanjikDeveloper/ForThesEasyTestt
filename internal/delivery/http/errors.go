@@ -40,12 +40,14 @@ func (h *TodoHandler) errorResponse(c *fiber.Ctx, err error) error {
 			logInternalError(err)
 		}
 	}
-
+	// TODO: пользователям не надо видеть что за ошибка на беке. Ее главное залогировать и отдать 500 статус
 	return c.Status(status).JSON(fiber.Map{
 		"error": message,
 	})
 }
 
+// TODO: сделай данную функуцию методом handler и у нее используй общий логгер для сервиса. Везде где нужно что-то логировать
+// прокидывай общий логгер и его используй
 func logInternalError(err error) {
 
 	log.Printf("Internal error: %+v", err)
