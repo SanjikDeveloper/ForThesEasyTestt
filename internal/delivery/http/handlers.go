@@ -15,8 +15,8 @@ type Server struct {
 	addr string
 }
 
-func NewServer(app TodoService, addr string) *Server {
-	handler := NewTodoHandler(app)
+func NewServer(app TodoService, addr string, log logger.Logger) *Server {
+	handler := NewTodoHandler(app, log)
 	return &Server{
 		app:  RegisterRoutes(handler),
 		addr: addr,
@@ -44,12 +44,12 @@ type TodoService interface {
 }
 
 type TodoHandler struct {
-	logger *logger.Logger
+	logger logger.Logger
 	app    TodoService
 }
 
-func NewTodoHandler(app TodoService) *TodoHandler {
-	return &TodoHandler{app: app}
+func NewTodoHandler(app TodoService, log logger.Logger) *TodoHandler {
+	return &TodoHandler{app: app, logger: log}
 }
 
 func (h *TodoHandler) validateTodo(todo models.Todo) error {

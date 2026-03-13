@@ -6,14 +6,6 @@ import (
 	"theSone/pkg/logger"
 )
 
-// TODO: можешь этот интерфейс вынести в сам pkg/logger и везде подтягивать, тож норм практика
-type Logger interface {
-	Error(format string, v ...interface{})
-	Warn(format string, v ...interface{})
-	Info(format string, v ...interface{})
-	Debug(format string, v ...interface{})
-}
-
 type todoRepository interface {
 	Create(ctx context.Context, t *models.Todo) error
 	GetByID(ctx context.Context, id int) (*models.Todo, error)
@@ -24,11 +16,11 @@ type todoRepository interface {
 
 type Application struct {
 	repo   todoRepository
-	logger Logger
+	logger logger.Logger
 }
 
-func NewApplication(repo todoRepository, logger *logger.Logger) *Application {
-	return &Application{repo: repo, logger: logger}
+func NewApplication(repo todoRepository, log logger.Logger) *Application {
+	return &Application{repo: repo, logger: log}
 }
 
 func (a *Application) Init() error {
