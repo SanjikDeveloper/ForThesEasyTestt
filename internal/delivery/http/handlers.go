@@ -10,31 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type Server struct {
-	app  *fiber.App
-	addr string
-}
-
-func NewServer(app TodoService, addr string, log logger.Logger) *Server {
-	handler := NewTodoHandler(app, log)
-	return &Server{
-		app:  RegisterRoutes(handler),
-		addr: addr,
-	}
-}
-
-func (s *Server) Init() error {
-	return nil
-}
-
-func (s *Server) Run(ctx context.Context) error {
-	return s.app.Listen(s.addr)
-}
-
-func (s *Server) Stop() error {
-	return s.app.Shutdown()
-}
-
 type TodoService interface {
 	CreateTodo(ctx context.Context, todo *models.Todo) error
 	GetTodoByID(ctx context.Context, id int) (*models.Todo, error)
@@ -107,26 +82,20 @@ func (h *TodoHandler) getTodoById(c *fiber.Ctx) error {
 }
 
 func (h *TodoHandler) updateTodo(c *fiber.Ctx) error {
-	idStr := c.Params("id")
-	if idStr == "" {
-		idStr = c.Query("id")
-	}
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "invalid or missing ID"))
-	}
-
 	var todo models.Todo
-	if err = c.BodyParser(&todo); err != nil {
+	if err := c.BodyParser(&todo); err != nil {
 		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "invalid request body"))
 	}
-	todo.ID = id
 
-	if err = h.validateTodo(todo); err != nil {
+	if todo.ID == 0 {
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "missing ID in request body"))
+	}
+
+	if err := h.validateTodo(todo); err != nil {
 		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, err.Error()))
 	}
 
-	if err = h.app.UpdateTodo(c.Context(), &todo); err != nil {
+	if err := h.app.UpdateTodo(c.Context(), &todo); err != nil {
 		return h.errorResponse(c, err)
 	}
 
@@ -148,19 +117,4 @@ func (h *TodoHandler) deleteTodo(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusOK)
-}
-
-func RegisterRoutes(handler *TodoHandler) *fiber.App {
-	app := fiber.New()
-
-	api := app.Group("/todo")
-	api.Post("/", handler.createTodo)
-	api.Get("/", handler.getAllTodos)
-	api.Get("/:id", handler.getTodoById)
-	// TODO: для апдейта тебе не надо брать из пути :id, ты можешь сразу из реквеста взять айди
-	// TODO: под роутер сделай отдельный файл, методы связанные с todo также в отдельный файл
-	api.Put("/:id", handler.updateTodo)
-	api.Delete("/:id", handler.deleteTodo)
-
-	return app
 }
