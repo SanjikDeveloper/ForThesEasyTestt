@@ -7,21 +7,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-// TODO: нигде не используется же. Можно убрать
-type Storage struct {
-	DB *sql.DB
-}
-
-// TODO: нигде не используется же. Можно убрать
-func NewStorage(cfg *Config) (*Storage, error) {
-	db, err := ConnectDB(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Storage{DB: db}, nil
-}
-
 func ConnectDB(cfg *Config) (*sql.DB, error) {
 	dbURL := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
