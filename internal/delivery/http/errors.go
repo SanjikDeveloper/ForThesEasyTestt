@@ -9,8 +9,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// TODO: в принципе мессадж нужен только если фронтенд просит что-то отправлять, чтобы самим что-то отрисовать от твоего сообщения
-// можно убрать, а так не принципиально. Статус коды уже почти всю инфу говорят
 func (h *TodoHandler) errorResponse(c *fiber.Ctx, err error) error {
 	if err == nil {
 		return nil
@@ -18,9 +16,7 @@ func (h *TodoHandler) errorResponse(c *fiber.Ctx, err error) error {
 
 	var fiberErr *fiber.Error
 	if errors.As(err, &fiberErr) {
-		return c.Status(fiberErr.Code).JSON(fiber.Map{
-			"error": fiberErr.Message,
-		})
+		return c.Status(fiberErr.Code).JSON(fiber.Map{})
 	}
 
 	var status int
