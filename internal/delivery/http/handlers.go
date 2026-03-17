@@ -2,123 +2,119 @@ package http
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
+	"errors"
 	"strconv"
 	"theSone/internal/models"
+	"theSone/pkg/logger"
+
+	"github.com/gofiber/fiber/v2"
 )
 
-type TodoRepository interface {
-	Create(ctx context.Context, t *models.Todo) error
-	GetByID(ctx context.Context, id int) (*models.Todo, error)
-	Update(ctx context.Context, t *models.Todo) error
-	Delete(ctx context.Context, id int) error
+type TodoService interface {
+	CreateTodo(ctx context.Context, todo *models.Todo) error
+	GetTodoByID(ctx context.Context, id int) (*models.Todo, error)
+	GetAllTodo(ctx context.Context) ([]*models.Todo, error)
+	UpdateTodo(ctx context.Context, todo *models.Todo) error
+	DeleteTodo(ctx context.Context, id int) error
 }
 
 type TodoHandler struct {
-	repo TodoRepository
+	logger logger.Logger
+	app    TodoService
 }
 
-func NewTodoHandler(repo TodoRepository) *TodoHandler {
-	return &TodoHandler{repo: repo}
+func NewTodoHandler(app TodoService, log logger.Logger) *TodoHandler {
+	return &TodoHandler{app: app, logger: log}
 }
 
-func (h *TodoHandler) writeJSON(w http.ResponseWriter, status int, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	err := json.NewEncoder(w).Encode(v)
+func (h *TodoHandler) validateTodo(todo models.Todo) error {
+	if len(todo.List) > 100 {
+		return errors.New("title should be less than 100 characters")
+	}
+	if len(todo.Description) > 500 {
+		return errors.New("description should be less than 500 characters")
+	}
+	return nil
+}
+
+func (h *TodoHandler) createTodo(c *fiber.Ctx) error {
+	var todo models.Todo
+	if err := c.BodyParser(&todo); err != nil {
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "Invalid request body"))
+	}
+
+	if err := h.validateTodo(todo); err != nil {
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, err.Error()))
+	}
+
+	if err := h.app.CreateTodo(c.Context(), &todo); err != nil {
+		return h.errorResponse(c, err)
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(todo)
+}
+
+func (h *TodoHandler) getAllTodos(c *fiber.Ctx) error {
+	todos, err := h.app.GetAllTodo(c.Context())
 	if err != nil {
-		return
+		return h.errorResponse(c, err)
 	}
+
+	return c.Status(fiber.StatusOK).JSON(todos)
 }
 
-func (h *TodoHandler) validateTodo(t *models.Todo) string {
-	if t.TodoList != nil && len(*t.TodoList) > 100 {
-		return "Title should be more than 100"
+func (h *TodoHandler) getTodoById(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	if idStr == "" {
+		idStr = c.Query("id")
 	}
-	if t.Description != nil && len(*t.Description) > 500 {
-		return "Description should be less than 500"
-	}
-	return ""
-}
-
-func (h *TodoHandler) CreateTodo(w http.ResponseWriter, r *http.Request) {
-	var t models.Todo
-	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-		ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
-		return
-	}
-
-	if msg := h.validateTodo(&t); msg != "" {
-		ErrorResponse(w, http.StatusBadRequest, msg)
-		return
-	}
-
-	if err := h.repo.Create(r.Context(), &t); err != nil {
-		ErrorResponse(w, http.StatusInternalServerError, "creating todo error")
-		return
-	}
-
-	h.writeJSON(w, http.StatusCreated, t)
-}
-
-func (h *TodoHandler) GetTodoById(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		ErrorResponse(w, http.StatusBadRequest, "Invalid or missing ID")
-		return
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "invalid or missing ID"))
 	}
 
-	t, err := h.repo.GetByID(r.Context(), id)
+	todo, err := h.app.GetTodoByID(c.Context(), id)
 	if err != nil {
-		ErrorResponse(w, http.StatusNotFound, "theres no todo like this")
-		return
+		return h.errorResponse(c, err)
 	}
 
-	h.writeJSON(w, http.StatusOK, t)
+	return c.Status(fiber.StatusOK).JSON(todo)
 }
 
-func (h *TodoHandler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		ErrorResponse(w, http.StatusBadRequest, "Invalid or missing ID")
-		return
+func (h *TodoHandler) updateTodo(c *fiber.Ctx) error {
+	var todo models.Todo
+	if err := c.BodyParser(&todo); err != nil {
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "invalid request body"))
 	}
 
-	var t models.Todo
-	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-		ErrorResponse(w, http.StatusBadRequest, "Invalid request body")
-		return
-	}
-	t.IdList = id
-
-	if msg := h.validateTodo(&t); msg != "" {
-		ErrorResponse(w, http.StatusBadRequest, msg)
-		return
+	if todo.ID == 0 {
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "missing ID in request body"))
 	}
 
-	if err := h.repo.Update(r.Context(), &t); err != nil {
-		ErrorResponse(w, http.StatusInternalServerError, "Internal server error")
-		return
+	if err := h.validateTodo(todo); err != nil {
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, err.Error()))
 	}
 
-	h.writeJSON(w, http.StatusOK, t)
+	if err := h.app.UpdateTodo(c.Context(), &todo); err != nil {
+		return h.errorResponse(c, err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(todo)
 }
 
-func (h *TodoHandler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
-	idStr := r.URL.Query().Get("id")
+func (h *TodoHandler) deleteTodo(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	if idStr == "" {
+		idStr = c.Query("id")
+	}
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		ErrorResponse(w, http.StatusBadRequest, "Invalid or missing ID")
-		return
+		return h.errorResponse(c, fiber.NewError(fiber.StatusBadRequest, "invalid or missing ID"))
 	}
 
-	if err := h.repo.Delete(r.Context(), id); err != nil {
-		ErrorResponse(w, http.StatusInternalServerError, "Internal server error")
-		return
+	if err := h.app.DeleteTodo(c.Context(), id); err != nil {
+		return h.errorResponse(c, err)
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	return c.SendStatus(fiber.StatusOK)
 }
