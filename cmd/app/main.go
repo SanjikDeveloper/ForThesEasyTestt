@@ -3,36 +3,36 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
-	"os"
 	delivery "theSone/internal/delivery/http"
 	"theSone/internal/repository/postgres"
+	"theSone/pkg"
 
 	_ "github.com/lib/pq"
 )
 
-// TODO: почему gitignore пустой?
 // TODO: где папка application?
-// TODO: я просил тебя не использовать ИИ для написания чего-либо. Перепиши taskfile своими руками хотя бы для команды go run
 func main() {
-	// TODO: переделай на godotenv
-	dbURL := os.Getenv("DATABASE_URL")
-	if dbURL == "" {
-		dbURL = "postgres://postgres:1234@localhost:5432/todo_db?sslmode=disable"
+	cfg, err := pkg.ReadConfig()
+	if err != nil {
+		slog.Error("error loading config: %s", err.Error())
+		return
 	}
 
-	// TODO: сделай лучше подключение к бд отдельно именно в бд, логику грейсфуллшатдауна тоже там же
+	dbURL := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		// TODO: замени фатал на лог и return
-		log.Fatal(err)
+		slog.Error("error opening db: %s", err.Error())
+		return
 	}
 	defer db.Close()
 
-	// TODO: можно переиспользовать err
 	if err := db.Ping(); err != nil {
-		log.Fatal(err)
+		slog.Error("error pinging db: %s", err.Error())
+		return
 	}
 
 	repo := postgres.NewTodoRepository(db)
@@ -56,7 +56,8 @@ func main() {
 		}
 	})
 
-	fmt.Println("Server is running on :8080")
-	// TODO: порт выведи в конфиг и не используй фаталы вообще, лучше обработай ошибку и выйди с функции через return
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	fmt.Printf("Server is running on %s\n", cfg.ServerPort)
+	if err := http.ListenAndServe(cfg.ServerPort, mux); err != nil {
+		slog.Error("server error: %s", err.Error())
+	}
 }
