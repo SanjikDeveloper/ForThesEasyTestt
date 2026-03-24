@@ -1,0 +1,61 @@
+version: "2"
+
+run:
+  go: "1.24"
+  timeout: 5m
+  tests: true
+  issues-exit-code: 1
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+linters:
+  default: none
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - unused
+
+    - errorlint
+    - errname
+    - nilerr
+    - bodyclose
+    - noctx
+
+    - gosec
+
+    - whitespace
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions:
+      - io.Copy
+      - io.WriteString
+      - (*bytes.Buffer).WriteString
+
+  staticcheck:
+    checks:
+      - "all"
+      - "-ST1000" # комментарии к package не обязательны
+
+
+issues:
+  max-same-issues: 0
+  new: false
+
+exclusions:
+  generated: lax
+  paths:
+    - \.pb\.go$
+    - mock_.*\.go$
+    - _gen\.go$
+
+  rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+        - noctx
